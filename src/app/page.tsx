@@ -8,6 +8,8 @@ import { ProgressLine, type Phase } from "@/components/ProgressLine";
 
 type DoneMeta = { tokensIn: number; tokensOut: number; cacheRead: number; finishReason: string };
 
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 function deriveDownloadName(srcName: string | undefined): string {
   if (!srcName) return "redesigned.html";
   const base = srcName.replace(/\.[^.]+$/, "");
@@ -46,7 +48,7 @@ export default function HomePage() {
     fd.append("designSystem", designSystem);
 
     try {
-      const res = await fetch("./api/generate", {
+      const res = await fetch(`${BASE_PATH}/api/generate`, {
         method: "POST",
         body: fd,
         signal: controller.signal,
