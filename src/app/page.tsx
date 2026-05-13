@@ -126,7 +126,13 @@ export default function HomePage() {
     <>
       <header className="header">
         <div className="header__brand">
-          <h1 className="header__title">ig-builder light</h1>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="header__logo"
+            src="https://app.instyle.group/_shared/static/logo.svg"
+            alt="instyle group"
+          />
+          <h1 className="header__title">Builder Light</h1>
           <span className="header__tag">BETA</span>
         </div>
         <div className="header__sub">資料を入れると、instyle.group デザインで一枚の HTML に。</div>

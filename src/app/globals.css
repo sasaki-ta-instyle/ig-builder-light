@@ -127,8 +127,14 @@ body {
 }
 .header__brand {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
+  align-items: center;
+  gap: 14px;
+}
+.header__logo {
+  height: 14px;
+  width: auto;
+  display: block;
+  opacity: 0.92;
 }
 .header__title {
   font-family: var(--font-display);
