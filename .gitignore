@@ -1,0 +1,50 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+
+# next.js
+.next/
+out/
+
+# production
+dist/
+build/
+
+# misc
+.DS_Store
+*.pem
+.vscode/
+.idea/
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (本番値はサーバ側 /var/www/_shared/ で管理)
+.env
+.env*.local
+.env.production
+.env.app
+.env.base
+
+# vercel
+.vercel
+
+# turbo
+.turbo
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+.env.local
+
+# Dropbox sync artifacts
+.dropbox
+*.dropbox
+
+# Claude Code conversation logs
+_conversation-logs/

@@ -1,0 +1,212 @@
+name: deploy-prod (ConoHa)
+
+# 「本番にあげて」と Claude に指示されたとき、または手動で起動する。
+# push やマージでは絶対に起動しない（workflow_dispatch のみ）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy (default: main)"
+        required: false
+        default: "main"
+
+concurrency:
+  group: deploy-prod-${{ vars.CATEGORY }}-${{ vars.APP_NAME }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CATEGORY: ${{ vars.CATEGORY }}
+      APP_NAME: ${{ vars.APP_NAME }}
+      HEALTHCHECK_PATH: ${{ vars.HEALTHCHECK_PATH }}
+      USE_DB: ${{ vars.USE_DB }}
+      MIGRATE_CMD: ${{ vars.MIGRATE_CMD }}
+      DEPLOY_BASE: /var/www/${{ vars.CATEGORY }}/${{ vars.APP_NAME }}
+      SHARED_BASE: /var/www/_shared
+
+    steps:
+      - name: Validate inputs
+        run: |
+          set -euo pipefail
+          : "${CATEGORY:?CATEGORY variable is required}"
+          : "${APP_NAME:?APP_NAME variable is required}"
+          if [[ ! "$CATEGORY" =~ ^(app|cpc|crhr)$ ]]; then
+            echo "::error::CATEGORY must be one of app|cpc|crhr (got '$CATEGORY')"
+            exit 1
+          fi
+          if [[ ! "$APP_NAME" =~ ^[a-z][a-z0-9-]*$ ]]; then
+            echo "::error::APP_NAME must match /^[a-z][a-z0-9-]*$/ (got '$APP_NAME')"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build (Next.js standalone)
+        run: pnpm build
+
+      - name: Stage build artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p _deploy
+          cp -r .next/standalone/. _deploy/
+          mkdir -p _deploy/.next
+          cp -r .next/static _deploy/.next/static
+          if [ -d public ]; then cp -r public _deploy/public; fi
+
+      - name: Setup SSH
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          echo "${{ secrets.CONOHA_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p ${{ secrets.CONOHA_PORT }} -H ${{ secrets.CONOHA_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Prepare release directory on server
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          ssh -p ${{ secrets.CONOHA_PORT }} ${{ secrets.CONOHA_USER }}@${{ secrets.CONOHA_HOST }} "
+            set -euo pipefail
+            mkdir -p ${DEPLOY_BASE}/releases/${SHA}
+          "
+
+      - name: Rsync to server
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          rsync -az --delete \
+            -e "ssh -p ${{ secrets.CONOHA_PORT }}" \
+            _deploy/ \
+            ${{ secrets.CONOHA_USER }}@${{ secrets.CONOHA_HOST }}:${DEPLOY_BASE}/releases/${SHA}/
+
+      - name: Copy ecosystem.config.cjs to release
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          scp -P ${{ secrets.CONOHA_PORT }} \
+            ecosystem.config.cjs \
+            ${{ secrets.CONOHA_USER }}@${{ secrets.CONOHA_HOST }}:${DEPLOY_BASE}/releases/${SHA}/ecosystem.config.cjs
+
+      - name: Link env files
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          ssh -p ${{ secrets.CONOHA_PORT }} ${{ secrets.CONOHA_USER }}@${{ secrets.CONOHA_HOST }} "
+            set -euo pipefail
+            REL=${DEPLOY_BASE}/releases/${SHA}
+            ln -sfn ${SHARED_BASE}/.env \$REL/.env.base
+            ln -sfn ${SHARED_BASE}/apps/${CATEGORY}-${APP_NAME}.env \$REL/.env.app || true
+          "
+
+      - name: Run migrations (DB only)
+        if: ${{ vars.USE_DB == 'true' }}
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          MIGRATE="${MIGRATE_CMD:-pnpm migrate}"
+          ssh -p ${{ secrets.CONOHA_PORT }} ${{ secrets.CONOHA_USER }}@${{ secrets.CONOHA_HOST }} "
+            set -euo pipefail
+            cd ${DEPLOY_BASE}/releases/${SHA}
+            export \$(grep -v '^#' .env.base 2>/dev/null | xargs -d '\n' || true)
+            export \$(grep -v '^#' .env.app  2>/dev/null | xargs -d '\n' || true)
+            ${MIGRATE}
+          "
+
+      - name: Atomic switch + reload
+        id: switch
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          ssh -p ${{ secrets.CONOHA_PORT }} ${{ secrets.CONOHA_USER }}@${{ secrets.CONOHA_HOST }} "
+            set -euo pipefail
+            cd ${DEPLOY_BASE}
+            if [ -L current ]; then readlink current > .previous_release; fi
+            ln -sfn releases/${SHA} current.new
+            mv -T current.new current
+            cd current
+            # Always delete-then-start so the PM2 process picks up the new ecosystem
+            # (cwd / script path / env). pm2 reload preserves the original script
+            # absolute path of the first start, which broke after symlink switches.
+            pm2 delete ${CATEGORY}-${APP_NAME} 2>/dev/null || true
+            pm2 start ecosystem.config.cjs --update-env
+            pm2 save
+          "
+
+      - name: Health check
+        id: health
+        run: |
+          set -euo pipefail
+          URL="https://${CATEGORY}.instyle.group${HEALTHCHECK_PATH:-/${APP_NAME}/}"
+          echo "Checking $URL"
+          for i in 1 2 3 4 5; do
+            if curl -fsS --max-time 10 "$URL" > /dev/null; then
+              echo "Health check OK (attempt $i)"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 3s..."
+            sleep 3
+          done
+          echo "::error::Health check failed for $URL"
+          exit 1
+
+      - name: Rollback on failure
+        if: failure() && steps.switch.outcome == 'success'
+        run: |
+          set -euo pipefail
+          ssh -p ${{ secrets.CONOHA_PORT }} ${{ secrets.CONOHA_USER }}@${{ secrets.CONOHA_HOST }} "
+            set -euo pipefail
+            cd ${DEPLOY_BASE}
+            if [ -f .previous_release ]; then
+              PREV=\$(cat .previous_release)
+              ln -sfn \$PREV current.new
+              mv -T current.new current
+              pm2 reload ${CATEGORY}-${APP_NAME} --update-env || true
+              echo 'Rolled back to '\$PREV
+            else
+              echo '::warning::No previous release to roll back to'
+            fi
+          "
+
+      - name: Cleanup old releases
+        if: success()
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          ssh -p ${{ secrets.CONOHA_PORT }} ${{ secrets.CONOHA_USER }}@${{ secrets.CONOHA_HOST }} "
+            set -euo pipefail
+            cd ${DEPLOY_BASE}/releases
+            ls -1t | tail -n +6 | xargs -I{} rm -rf -- {}
+          "
+
+      - name: Summary
+        if: success()
+        run: |
+          URL="https://${CATEGORY}.instyle.group/${APP_NAME}/"
+          echo "## Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "- URL: $URL" >> $GITHUB_STEP_SUMMARY
+          echo "- SHA: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- PM2: ${CATEGORY}-${APP_NAME}" >> $GITHUB_STEP_SUMMARY
