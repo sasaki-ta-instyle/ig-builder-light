@@ -4,7 +4,7 @@ import "./globals.css";
 const SITE_URL = "https://app.instyle.group/ig-builder-light";
 const ASSETS = "https://app.instyle.group/_shared/static";
 
-const TITLE = "ig-builder light";
+const TITLE = "IGビルダーライト | INSTYLE GROUP";
 const DESCRIPTION =
   "PDF / 画像 / Word / PowerPoint / HTML を入れると、instyle.group デザインシステムに沿って美しい HTML にリデザインします。";
 
