@@ -4,7 +4,7 @@ import type { ExtractedAttachment } from "../attachments";
 import { buildSystemBlocks, type DesignSystem } from "../prompt/buildSystemPrompt";
 
 export const DEFAULT_MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
-export const MAX_OUTPUT_TOKENS = 8192;
+export const MAX_OUTPUT_TOKENS = Number(process.env.ANTHROPIC_MAX_OUTPUT_TOKENS) || 32000;
 
 export type StreamEvent =
   | { type: "phase"; phase: "thinking" | "writing" }

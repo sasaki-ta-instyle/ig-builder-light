@@ -1,6 +1,6 @@
 "use client";
 
-export type Phase = "idle" | "reading" | "thinking" | "writing" | "done" | "error";
+export type Phase = "idle" | "reading" | "thinking" | "writing" | "done" | "truncated" | "error";
 
 const LABEL: Record<Phase, string> = {
   idle: "待機中",
@@ -8,6 +8,7 @@ const LABEL: Record<Phase, string> = {
   thinking: "情報構造を組み立てています",
   writing: "HTML を生成しています",
   done: "完成しました",
+  truncated: "出力上限で途中停止しました",
   error: "エラーが発生しました",
 };
 
@@ -31,7 +32,7 @@ export function ProgressLine({
         <div style={{ fontWeight: 600 }}>{LABEL[phase]}</div>
         {detail && <div className="progress__detail">{detail}</div>}
       </div>
-      {phase === "done" && (tokensIn ?? 0) > 0 && (
+      {(phase === "done" || phase === "truncated") && (tokensIn ?? 0) > 0 && (
         <div className="progress__usage">
           in {tokensIn?.toLocaleString()} / out {tokensOut?.toLocaleString()}
           {(cacheRead ?? 0) > 0 && ` / cache ${cacheRead?.toLocaleString()}`}

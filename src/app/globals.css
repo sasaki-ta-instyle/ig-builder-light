@@ -350,8 +350,9 @@ body {
 .progress[data-phase="reading"]  .progress__dot { background: var(--color-info); }
 .progress[data-phase="thinking"] .progress__dot { background: var(--color-warning); }
 .progress[data-phase="writing"]  .progress__dot { background: var(--color-success); }
-.progress[data-phase="done"]     .progress__dot { background: var(--color-success); animation: none; }
-.progress[data-phase="error"]    .progress__dot { background: var(--color-error); animation: none; }
+.progress[data-phase="done"]      .progress__dot { background: var(--color-success); animation: none; }
+.progress[data-phase="truncated"] .progress__dot { background: var(--color-warning); animation: none; }
+.progress[data-phase="error"]     .progress__dot { background: var(--color-error); animation: none; }
 @keyframes pulse {
   0%, 100% { transform: scale(1);   opacity: 0.6; }
   50%      { transform: scale(1.4); opacity: 1; }

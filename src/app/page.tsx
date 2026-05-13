@@ -92,8 +92,9 @@ export default function HomePage() {
               acc += data.chunk;
               setHtml(acc);
             } else if (ev === "done") {
-              setPhase("done");
-              setDetail("");
+              const truncated = data.finishReason === "max_tokens";
+              setPhase(truncated ? "truncated" : "done");
+              setDetail(truncated ? "max_tokens に達しました。「やり直す」で再生成してください。" : "");
               setDone({
                 tokensIn: data.tokensIn,
                 tokensOut: data.tokensOut,
