@@ -187,11 +187,10 @@ export default function HomePage() {
               src="https://app.instyle.group/_shared/static/logo.svg"
               alt="instyle group"
             />
-            <h1 className="header__title">Builder Light</h1>
+            <h1 className="header__title">HTML Builder</h1>
           </span>
           <span className="header__tag">BETA</span>
         </div>
-        <div className="header__sub">資料を入れると、instyle.group デザインで一枚の HTML に。</div>
       </header>
 
       <main className="main">
