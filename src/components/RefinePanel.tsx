@@ -4,8 +4,8 @@ import { useState } from "react";
 const SUGGESTIONS = [
   "見出しをひとまわり大きく",
   "本文の文字を少し細く",
-  "CTA ボタンの文言を変更",
-  "ハイライト色を強めに",
+  "最後にお問い合わせのセクションを追加",
+  "冒頭に注意書きを 1 行追加",
 ];
 
 export function RefinePanel({
@@ -27,7 +27,7 @@ export function RefinePanel({
     <div className="refine">
       <textarea
         className="refine__input"
-        placeholder="例：見出しをもう少し大きく / 「お問い合わせ」を「相談する」に / 本文の文字を細く"
+        placeholder="例：見出しを大きく / 「お問い合わせ」を「相談する」に / 末尾にFAQセクションを追加 / 最後の段落を削除"
         rows={3}
         value={value}
         onChange={(e) => setValue(e.target.value)}
