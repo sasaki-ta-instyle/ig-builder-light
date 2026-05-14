@@ -132,7 +132,7 @@ body {
 }
 .header__lockup {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 10px;
 }
 .header__logo {
