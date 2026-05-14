@@ -132,7 +132,7 @@ body {
 }
 .header__lockup {
   display: inline-flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 10px;
 }
 .header__logo {
@@ -188,7 +188,7 @@ body {
   margin: 0 0 12px;
 }
 .controls__inner {
-  padding: 32px;
+  padding: 4px;
   display: flex;
   flex-direction: column;
   gap: 24px;

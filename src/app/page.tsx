@@ -145,47 +145,45 @@ export default function HomePage() {
 
       <main className="main">
         <section className="controls">
-          <div className="glass-panel">
-            <div className="controls__inner">
-              <div>
-                <h2 className="controls__section-title">1. 資料を入れる</h2>
-                <DropZone file={file} onFile={setFile} disabled={isStreaming} />
-              </div>
-
-              <div>
-                <h2 className="controls__section-title">2. デザインを選ぶ</h2>
-                <DesignToggle value={designSystem} onChange={setDesignSystem} disabled={isStreaming} />
-              </div>
-
-              <div>
-                {isStreaming ? (
-                  <button type="button" className="btn-primary" onClick={cancel}>
-                    中断する
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    disabled={!file}
-                    onClick={generate}
-                  >
-                    リデザインする
-                  </button>
-                )}
-              </div>
-
-              {phase !== "idle" && (
-                <ProgressLine
-                  phase={phase}
-                  detail={detail}
-                  tokensIn={done?.tokensIn}
-                  tokensOut={done?.tokensOut}
-                  cacheRead={done?.cacheRead}
-                />
-              )}
-
-              {error && <div className="toast">{error}</div>}
+          <div className="controls__inner">
+            <div>
+              <h2 className="controls__section-title">1. 資料を入れる</h2>
+              <DropZone file={file} onFile={setFile} disabled={isStreaming} />
             </div>
+
+            <div>
+              <h2 className="controls__section-title">2. デザインを選ぶ</h2>
+              <DesignToggle value={designSystem} onChange={setDesignSystem} disabled={isStreaming} />
+            </div>
+
+            <div>
+              {isStreaming ? (
+                <button type="button" className="btn-primary" onClick={cancel}>
+                  中断する
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={!file}
+                  onClick={generate}
+                >
+                  リデザインする
+                </button>
+              )}
+            </div>
+
+            {phase !== "idle" && (
+              <ProgressLine
+                phase={phase}
+                detail={detail}
+                tokensIn={done?.tokensIn}
+                tokensOut={done?.tokensOut}
+                cacheRead={done?.cacheRead}
+              />
+            )}
+
+            {error && <div className="toast">{error}</div>}
           </div>
         </section>
 
