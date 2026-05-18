@@ -6,6 +6,7 @@ import { PreviewIframe } from "@/components/PreviewIframe";
 import { ActionBar } from "@/components/ActionBar";
 import { ProgressLine, type Phase } from "@/components/ProgressLine";
 import { RefinePanel } from "@/components/RefinePanel";
+import { PublishPanel } from "@/components/PublishPanel";
 
 type DoneMeta = { tokensIn: number; tokensOut: number; cacheRead: number; finishReason: string };
 
@@ -239,6 +240,13 @@ export default function HomePage() {
               <div>
                 <h2 className="controls__section-title">3. 微調整する</h2>
                 <RefinePanel disabled={!canRefine} onSubmit={refine} />
+              </div>
+            )}
+
+            {hasHtml && (
+              <div>
+                <h2 className="controls__section-title">4. 公開する</h2>
+                <PublishPanel html={cleaned} disabled={isStreaming} basePath={BASE_PATH} />
               </div>
             )}
           </div>

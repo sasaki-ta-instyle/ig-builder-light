@@ -90,6 +90,10 @@ gh run watch
 ANTHROPIC_API_KEY=...
 # 任意（モデル切替したいときだけ）
 # ANTHROPIC_MODEL=claude-sonnet-4-6
+
+# 「4. 公開する」機能を有効にするときだけ設定（本番のみ）
+# /var/www/<cpc|crhr>/html/<name>.html に書き出す。未設定なら 503 で機能無効
+PUBLISH_BASE_DIR=/var/www
 ```
 
 ## 初回 ConoHa セットアップ手順（このアプリ用）
@@ -123,6 +127,16 @@ location = /ig-builder-light/api/generate {
 }
 EOF
 nginx -t && systemctl reload nginx'
+
+# 3. 「4. 公開する」機能を使うなら、共有 /html/ への deploy 書き込み権限を確認
+ssh conoha-root 'stat -c "%U %G %a" /var/www/cpc/html /var/www/crhr/html'
+ssh conoha-root 'sudo -u deploy touch /var/www/cpc/html/.write_probe && rm /var/www/cpc/html/.write_probe'
+ssh conoha-root 'sudo -u deploy touch /var/www/crhr/html/.write_probe && rm /var/www/crhr/html/.write_probe'
+# 書けない場合の例:
+# ssh conoha-root 'chown -R deploy:www-data /var/www/cpc/html /var/www/crhr/html && chmod 2775 /var/www/cpc/html /var/www/crhr/html'
+
+# 4. env に PUBLISH_BASE_DIR を追加
+ssh conoha-root 'echo "PUBLISH_BASE_DIR=/var/www" >> /var/www/_shared/apps/app-ig-builder-light.env'
 ```
 
 ## ロールバック
