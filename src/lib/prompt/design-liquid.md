@@ -531,6 +531,25 @@ tr:not(:last-child) td { border-bottom: 1px solid rgba(255,255,255,.42); }
 .input::placeholder { color: var(--color-text-light); }
 ```
 
+### ロゴ / ブランド表記（INSTYLE GROUP）
+
+ヘッダー・フッター等で「INSTYLE GROUP」を出す場合は **テキスト表記ではなくロゴ（`ig_logo_2026.svg`）を優先**する。社内向けが主目的の制作物が大半なので、ロゴは**主張させずに小さめ**に配置する。
+
+**ルール**
+- 表示は `ig_logo_2026.svg` をそのまま `<img>` で配置（色変更しない）
+- 推奨サイズ: `height: 14px`（基準）／ 最大でも `height: 18px`
+- Liquid のヘッダーは glass パネル上に乗ることが多いが、ロゴは glass トークンを被せず固定色のまま置く（パネルが半透明なので背景に紛れず読める）
+- 同じ画面内に他のロゴと並べる場合も 14〜18px の帯に収める
+- どうしてもテキスト表記が必要な場合（メール本文／プレーンテキスト埋め込み等）のみ「INSTYLE GROUP」と書く
+
+```html
+<a href="https://instyle.group" aria-label="INSTYLE GROUP">
+  <img src="/_shared/static/logo.svg" alt="INSTYLE GROUP" style="height: 14px; display: block;">
+</a>
+```
+
+> 使ってはいけない例: ヒーローの中央に大きく置く、見出し代わりに 32px 以上で配置、glass の発光やシャドウをロゴ全体に被せる、accent カラーで塗りつぶす。
+
 ---
 
 ## 6. レイアウト
