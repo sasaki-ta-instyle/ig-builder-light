@@ -161,15 +161,19 @@ jobs:
           set -euo pipefail
           URL="https://${CATEGORY}.instyle.group${HEALTHCHECK_PATH:-/${APP_NAME}/}"
           echo "Checking $URL"
+          # -L でリダイレクトを追跡し、最終ステータスが 2xx の場合のみ成功とする。
+          # 旧実装は `curl -fsS` で 308 でも exit 0 になり、basePath 設定不備や
+          # ポート競合で実際に 4xx を返していても気付けなかった。
           for i in 1 2 3 4 5; do
-            if curl -fsS --max-time 10 "$URL" > /dev/null; then
-              echo "Health check OK (attempt $i)"
+            CODE=$(curl -sSL -o /dev/null --max-time 15 -w "%{http_code}" "$URL" || echo "000")
+            if [[ "$CODE" =~ ^2[0-9][0-9]$ ]]; then
+              echo "Health check OK (attempt $i, final HTTP $CODE)"
               exit 0
             fi
-            echo "Attempt $i failed, retrying in 3s..."
+            echo "Attempt $i: HTTP $CODE (need 2xx), retrying in 3s..."
             sleep 3
           done
-          echo "::error::Health check failed for $URL"
+          echo "::error::Health check failed for $URL (last HTTP $CODE)"
           exit 1
 
       - name: Rollback on failure
